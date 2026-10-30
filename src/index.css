@@ -45,6 +45,8 @@ button, input { font: inherit; }
   white-space: nowrap;
 }
 
+.how-to-play { margin: -29px auto 27px; color: #e6f1ef; font-size: 13px; font-weight: 700; letter-spacing: .2px; text-align: center; }
+
 .product-frame,
 .nutrition-card {
   background: #fff;
@@ -53,8 +55,10 @@ button, input { font: inherit; }
 }
 
 .product-frame {
+  display: flex;
+  flex-direction: column;
   width: 310px;
-  height: 292px;
+  height: auto;
   padding: 12px 7px;
   margin-bottom: 31px;
 }
@@ -73,6 +77,11 @@ button, input { font: inherit; }
   border: 2px solid #555;
 }
 .product-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.product-title { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; padding: 2px 2px 0; text-align: left; }
+.product-brand { font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #315c5e; }
+.product-name { font-size: 16px; font-weight: 900; letter-spacing: -.4px; color: #050505; line-height: 1.1; }
+.product-detail { font-size: 12px; font-weight: 500; color: #555; line-height: 1.25; margin-top: 2px; }
 
 .package-top {
   position: absolute;
@@ -149,6 +158,7 @@ button, input { font: inherit; }
 .score-heading strong { font-size: 22px; }
 .score-details { margin-top: 3px; color: #315c5e; }
 .score-card button { display: block; margin-top: 6px; padding: 0; border: 0; color: #315c5e; background: transparent; cursor: pointer; font-size: 11px; font-weight: 900; text-decoration: underline; }
+.countdown { margin-top: 8px; padding-top: 8px; border-top: 1px solid #c9d9d6; font-size: 11px; font-weight: 800; color: #315c5e; letter-spacing: .5px; }
 .final-score-card { margin-top: 10px; }
 .no-game-card { padding: 24px; background: #fff; border: 1px solid #e3e3e3; text-align: center; }
 .no-game-card h2 { margin: 0 0 8px; font-size: 20px; }
@@ -170,9 +180,10 @@ button, input { font: inherit; }
     width: 100%;
     max-width: none;
     left: auto;
-    margin-bottom: 38px;
+    margin-bottom: 8px;
     transform: none;
   }
+  .how-to-play { grid-column: 1 / -1; margin: 0 auto 38px; }
   .product-frame { margin-bottom: 0; }
   .product-frame, .nutrition-card { box-shadow: 0 12px 24px rgba(10, 35, 36, .13); }
 }

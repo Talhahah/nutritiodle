@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { getFoodsForToday, getAllDates, type Food, type NutrientKey } from '@/foods';
 
 type Guesses = Record<NutrientKey, string>;
@@ -36,7 +36,26 @@ function App() {
   const [checked, setChecked] = useState(false);
   const [scores, setScores] = useState<number[]>([]);
   const [finished, setFinished] = useState(false);
+  const [timeUntilMidnight, setTimeUntilMidnight] = useState('');
   const audioContextRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    if (!finished) return;
+    const update = () => {
+      const now = new Date();
+      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+      const diff = midnight.getTime() - now.getTime();
+      const hours = Math.floor(diff / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      setTimeUntilMidnight(
+        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+      );
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [finished]);
 
   const playSound = (sound: 'input' | 'submit' | 'next' | 'finish') => {
     const AudioContextClass = window.AudioContext;
@@ -97,10 +116,14 @@ function App() {
 
   const food = foods[foodIndex];
   const allGuessesFilled = food.nutrients.every(({ key }) => guesses[key] !== '');
+  const nutrientScores = food.nutrients.map(({ key, value }) => {
+    const guess = Number(guesses[key] || 0);
+    const errorRatio = Math.abs(guess - value) / Math.max(value, 1);
+    return Math.max(0, Math.round(100 - errorRatio * 100));
+  });
+  const score = Math.round(nutrientScores.reduce((total, current) => total + current, 0) / nutrientScores.length);
   const averageGuess = food.nutrients.reduce((total, { key }) => total + Number(guesses[key] || 0), 0) / food.nutrients.length;
-  const averageActual = food.nutrients.reduce((total, { value }) => total + value, 0) / food.nutrients.length;
-  const averageOff = Math.abs(averageGuess - averageActual);
-  const score = Math.max(0, Math.round(100 - (averageOff / averageActual) * 100));
+  const averageOff = food.nutrients.reduce((total, { key, value }) => total + Math.abs(Number(guesses[key] || 0) - value), 0) / food.nutrients.length;
   const completedScores = finished ? scores : [...scores, ...(checked ? [score] : [])];
   const totalScore = completedScores.reduce((total, current) => total + current, 0);
   const finalAverage = Math.round(totalScore / foods.length);
@@ -151,6 +174,7 @@ function App() {
     <main className="game-shell">
       <div className="game-column">
         <header className="title-card">NUTRITIODLE</header>
+        <p className="how-to-play">Guess the nutritional breakdown of the food.</p>
 
         <section className="product-frame" aria-label="Featured product">
           {food.photo ? (
@@ -169,6 +193,11 @@ function App() {
               <div className="package-side">NEW!</div>
             </div>
           )}
+          <div className="product-title">
+            <span className="product-brand">{food.brand}</span>
+            <span className="product-name">{food.name}</span>
+            <span className="product-detail">{food.detail}</span>
+          </div>
         </section>
 
         <form className="nutrition-card" onSubmit={handleSubmit}>
@@ -245,6 +274,7 @@ function App() {
             <div className="score-card final-score-card">
               <div className="score-heading">Final score <strong>{finalAverage}/100</strong></div>
               <div className="score-details">Average of your {foods.length} food scores</div>
+              <div className="countdown">Next game in {timeUntilMidnight}</div>
               <button type="button" onClick={resetGame}>Play again</button>
             </div>
           )}
