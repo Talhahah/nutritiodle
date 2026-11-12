@@ -1,9 +1,16 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { getFoodsForToday, getAllDates, type Food, type NutrientKey } from '@/foods';
+import SiteFooter from '@/components/SiteFooter';
+import { creatorCredit } from '@/content/creator';
 
 type Guesses = Record<NutrientKey, string>;
 
 const emptyGuesses = (): Guesses => ({ fat: '', sugars: '', protein: '' });
+
+const parseGuess = (raw: string): number | null => {
+  const value = Number(raw);
+  return raw === '' || Number.isNaN(value) ? null : value;
+};
 
 type AccuracyTier = 'exact' | 'great' | 'good' | 'close' | 'off';
 
@@ -115,15 +122,15 @@ function App() {
   }
 
   const food = foods[foodIndex];
-  const allGuessesFilled = food.nutrients.every(({ key }) => guesses[key] !== '');
+  const allGuessesFilled = food.nutrients.every(({ key }) => parseGuess(guesses[key]) !== null);
   const nutrientScores = food.nutrients.map(({ key, value }) => {
-    const guess = Number(guesses[key] || 0);
+    const guess = parseGuess(guesses[key]) ?? 0;
     const errorRatio = Math.abs(guess - value) / Math.max(value, 1);
     return Math.max(0, Math.round(100 - errorRatio * 100));
   });
   const score = Math.round(nutrientScores.reduce((total, current) => total + current, 0) / nutrientScores.length);
-  const averageGuess = food.nutrients.reduce((total, { key }) => total + Number(guesses[key] || 0), 0) / food.nutrients.length;
-  const averageOff = food.nutrients.reduce((total, { key, value }) => total + Math.abs(Number(guesses[key] || 0) - value), 0) / food.nutrients.length;
+  const averageGuess = food.nutrients.reduce((total, { key }) => total + (parseGuess(guesses[key]) ?? 0), 0) / food.nutrients.length;
+  const averageOff = food.nutrients.reduce((total, { key, value }) => total + Math.abs((parseGuess(guesses[key]) ?? 0) - value), 0) / food.nutrients.length;
   const completedScores = finished ? scores : [...scores, ...(checked ? [score] : [])];
   const totalScore = completedScores.reduce((total, current) => total + current, 0);
   const finalAverage = Math.round(totalScore / foods.length);
@@ -136,7 +143,8 @@ function App() {
   };
 
   const handleGuessChange = (key: NutrientKey, value: string) => {
-    setGuesses((current) => ({ ...current, [key]: value.replace(/[^0-9]/g, '') }));
+    const sanitized = value.replace(/[^0-9.]/g, '').match(/^\d*\.?\d*/)?.[0] ?? '';
+    setGuesses((current) => ({ ...current, [key]: sanitized }));
     setChecked(false);
     if (value !== '') playSound('input');
   };
@@ -216,8 +224,8 @@ function App() {
             <div className="rule rule-thick" />
 
             {food.nutrients.map(({ key, label, value }) => {
-              const guess = Number(guesses[key]);
-              const difference = Math.abs(guess - value);
+              const guess = parseGuess(guesses[key]) ?? 0;
+              const difference = Math.round(Math.abs(guess - value) * 10) / 10;
               const tier = getAccuracyTier(guess, value);
               const colors = tierColors[tier];
               return (
@@ -226,8 +234,8 @@ function App() {
                   <div className="nutrient-answer">
                     <input
                       aria-label={`Guess ${label}`}
-                      inputMode="numeric"
-                      maxLength={3}
+                      inputMode="decimal"
+                      maxLength={6}
                       placeholder="?"
                       value={guesses[key]}
                       disabled={checked}
@@ -279,7 +287,17 @@ function App() {
             </div>
           )}
         </form>
+        {creatorCredit.text && (
+          <p className="creator-credit">
+            {creatorCredit.url ? (
+              <a href={creatorCredit.url} target="_blank" rel="noopener noreferrer">{creatorCredit.text}</a>
+            ) : (
+              creatorCredit.text
+            )}
+          </p>
+        )}
       </div>
+      <SiteFooter />
     </main>
   );
 }
