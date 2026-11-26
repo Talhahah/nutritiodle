@@ -1,4 +1,4 @@
 export const creatorCredit = {
   text: 'Made By @Talxax',
-  url: 'https://www.youtube.com/@talxax',
+  url: 'https://youtube.com',
 };

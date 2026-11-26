@@ -12,7 +12,7 @@ export const aboutPage: InfoPage = {
     {
       heading: 'How scoring works',
       paragraphs: [
-        'Each guess is scored by how close it is to the real number. Your final score is the average of your scores for every food in today\'s game.',
+        'Each guess is scored out of 100. For larger nutrients (15g or more), you lose points by percentage: 10% off scores 90, 25% off scores 75. For smaller values, points are lost per gram instead, so being 1g off barely costs you. Your final score is the average of your scores for every food in today\'s game.',
       ],
     },
   ],

@@ -14,13 +14,29 @@ const parseGuess = (raw: string): number | null => {
 
 type AccuracyTier = 'exact' | 'great' | 'good' | 'close' | 'off';
 
+// Nutrients at or above this use percent error; smaller ones use absolute grams off,
+// so tiny values aren't crushed by percent math (1g off on a 2g value = 0 otherwise).
+const PERCENT_ERROR_CUTOFF = 15;
+
+function nutrientScore(guess: number, actual: number): number {
+  const diff = Math.abs(guess - actual);
+  const penalty = actual >= PERCENT_ERROR_CUTOFF ? (diff / actual) * 100 : diff * 5;
+  return Math.max(0, Math.round(100 - penalty));
+}
+
 function getAccuracyTier(guess: number, actual: number): AccuracyTier {
-  if (actual === 0) return guess === 0 ? 'exact' : guess <= 2 ? 'great' : 'off';
-  const percent = Math.abs(guess - actual) / actual;
-  if (percent === 0) return 'exact';
-  if (percent <= 0.1) return 'great';
-  if (percent <= 0.25) return 'good';
-  if (percent <= 0.5) return 'close';
+  const diff = Math.abs(guess - actual);
+  if (diff === 0) return 'exact';
+  if (actual >= PERCENT_ERROR_CUTOFF) {
+    const percent = diff / actual;
+    if (percent <= 0.1) return 'great';
+    if (percent <= 0.25) return 'good';
+    if (percent <= 0.5) return 'close';
+  } else {
+    if (diff <= 1) return 'great';
+    if (diff <= 2.5) return 'good';
+    if (diff <= 5) return 'close';
+  }
   return 'off';
 }
 
@@ -123,11 +139,9 @@ function App() {
 
   const food = foods[foodIndex];
   const allGuessesFilled = food.nutrients.every(({ key }) => parseGuess(guesses[key]) !== null);
-  const nutrientScores = food.nutrients.map(({ key, value }) => {
-    const guess = parseGuess(guesses[key]) ?? 0;
-    const errorRatio = Math.abs(guess - value) / Math.max(value, 1);
-    return Math.max(0, Math.round(100 - errorRatio * 100));
-  });
+  const nutrientScores = food.nutrients.map(({ key, value }) =>
+    nutrientScore(parseGuess(guesses[key]) ?? 0, value)
+  );
   const score = Math.round(nutrientScores.reduce((total, current) => total + current, 0) / nutrientScores.length);
   const averageGuess = food.nutrients.reduce((total, { key }) => total + (parseGuess(guesses[key]) ?? 0), 0) / food.nutrients.length;
   const averageOff = food.nutrients.reduce((total, { key, value }) => total + Math.abs((parseGuess(guesses[key]) ?? 0) - value), 0) / food.nutrients.length;
